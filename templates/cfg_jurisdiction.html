@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>微信</title>
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+</head>
+<body>
+<div>
+    <button id="searchButton">查询</button>
+    <button class="btn btn_primary" id="checkJsApi">checkJsApi</button>
+    <input type="text" name="sn" id="codeValue">
+    <input id="scanQRCode" value="扫一扫" type="button">
+</div>
+<script type="text/javascript">
+
+    // 参考：https://blog.csdn.net/Shen1105/article/details/106258069/
+    // 参考：https://blog.csdn.net/lindali1115/article/details/85094679
+
+    var siteUrl = window.location.href;
+    console.log(siteUrl)
+    var json = {
+        "siteUrl": siteUrl
+    };
+    $(document).ready(function () {
+        $.ajax({
+            type: 'GET',
+            url: '/wx/get_signature/',
+            dataType: "json",
+            data: json,
+            success: function (res) {
+                console.log('get_signature 成功')
+                console.log(res)
+                wxConfig(res)
+            },
+            error: function (res) {
+                alert(res)
+                console.log('get_signature 失败')
+                console.log(res)
+            }
+        })
+    })
+
+    function wxConfig(res) {
+        wx.config({
+            debug: true,
+            appId: res.appId,
+            timestamp: res.timestamp,
+            nonceStr: res.nonceStr,
+            signature: res.signature,
+            jsApiList: [
+                'checkJsApi',
+                'scanQRCode',
+                'translateVoice'
+            ]
+        });
+
+        wx.error(function (res) {
+            console.log("wx.config配置错误")
+            console.log(res.errMsg)
+        });
+
+        wx.ready(function () {
+            document.querySelector('#checkJsApi').onclick = function () {
+                // 判断当前客户端版本是否支持指定JS接口
+                wx.checkJsApi({
+                    jsApiList: ['scanQRCode'], // 需要检测的JS接口列表，所有JS接口列表见附录2,
+                    success: function (res) {
+                        console.log('支持JS接口')
+                        console.log(res)
+                    },
+                    error: function (res) {
+                        console.log('不支持JS接口')
+                        console.log(res)
+                    }
+                });
+            }
+        });
+    }
+
+    $("#scanQRCode").click(function (event) {
+        wx.scanQRCode({
+            needResult: 1,    // 默认为0，扫描结果由微信处理，1则直接返回扫描结果，
+            scanType: ["qrCode", "barCode"],   // 可以指定扫二维码还是一维码，默认二者都有
+            success: function (res) {
+                var result = res.resultStr;   // 当needResult 为 1 时，扫码返回的结果
+                $("#codeValue").val(result)   //赋值
+                console.log('扫码成功')
+                console.log(result)
+            },
+            error: function (res) {
+                console.log('扫码失败')
+                console.log(res)
+            }
+        });
+    })
+
+</script>
+</body>
+</html>
